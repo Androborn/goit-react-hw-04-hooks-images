@@ -1,45 +1,43 @@
-import { Component } from 'react';
+import { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
 import { Overlay, ModalWindow } from './Modal.styled';
 
-export class Modal extends Component {
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
-    this.switchBodyScroll('hidden', '17px');
-  }
+export function Modal({ closeModal, children }) {
+  const keydownHandler = useCallback(
+    ({ code }) => {
+      if (code === 'Escape') {
+        closeModal();
+      }
+    },
+    [closeModal],
+  );
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-    this.switchBodyScroll('unset', '0');
-  }
+  useEffect(() => {
+    window.addEventListener('keydown', keydownHandler);
+    switchBodyScroll('hidden', '17px');
+    return () => {
+      window.removeEventListener('keydown', keydownHandler);
+      switchBodyScroll('unset', '0');
+    };
+  }, [keydownHandler]);
 
-  switchBodyScroll(state, margin) {
+  function switchBodyScroll(state, margin) {
     document.body.style.overflow = state;
     document.body.style.marginRight = margin;
   }
 
-  handleKeyDown = ({ code }) => {
-    if (code === 'Escape') {
-      this.props.closeModal();
-    }
-  };
-
-  render() {
-    const { closeModal, children } = this.props;
-
-    return (
-      <Overlay
-        onClick={({ target, currentTarget }) => {
-          if (target === currentTarget) {
-            closeModal();
-          }
-        }}
-      >
-        <ModalWindow>{children}</ModalWindow>
-      </Overlay>
-    );
-  }
+  return (
+    <Overlay
+      onClick={({ target, currentTarget }) => {
+        if (target === currentTarget) {
+          closeModal();
+        }
+      }}
+    >
+      <ModalWindow>{children}</ModalWindow>
+    </Overlay>
+  );
 }
 
 Modal.propTypes = {

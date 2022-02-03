@@ -13,53 +13,51 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const isFirstRender = useRef(true);
 
-  console.log(fetchedImages);
-  console.log(fetchQuery);
-  console.log(page);
-
   const receivedImages = useCallback(async () => {
-    const newlyfetchedImages = await pixabayApiService(fetchQuery, page);
-    if (Array.isArray(newlyfetchedImages)) {
-      setFetchedImages(() => {
-        if (fetchedImages) {
-          return [...fetchedImages, ...newlyfetchedImages];
-        }
-        return [...newlyfetchedImages];
-      });
-      if (fetchedImages) {
-        window.scrollBy({ top: 1000, behavior: 'smooth' });
+    try {
+      const newlyfetchedImages = await pixabayApiService(fetchQuery, page);
+
+      if (Array.isArray(newlyfetchedImages)) {
+        return setFetchedImages(prevFetchedImages => {
+          if (prevFetchedImages) {
+            return [...prevFetchedImages, ...newlyfetchedImages];
+          }
+          return [...newlyfetchedImages];
+        });
+      } else {
+        throw new Error('Fetch try error');
       }
-    } else {
-      throw new Error('Fetch try error');
+    } catch (error) {
+      console.log(error);
+      alert(
+        `An error occured processing your request. Retry, or contact site Admin for "${error.message}" if repeats.`,
+      );
+    } finally {
+      setLoading(false);
     }
-  }, [fetchQuery, fetchedImages, page]);
+  }, [fetchQuery, page]);
 
   useEffect(() => {
-    return async () => {
-      try {
-        if (isFirstRender.current) {
-          isFirstRender.current = false;
-          return;
-        }
-        setLoading(true);
-        receivedImages();
-      } catch (error) {
-        console.log(error);
-        alert(
-          `An error occured processing your request. Retry, or contact site Admin for "${error.message}" if repeats.`,
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setLoading(true);
+    receivedImages();
   }, [receivedImages]);
+
+  useEffect(() => {
+    if (page > 1) {
+      return window.scrollBy({ top: 1000, behavior: 'smooth' });
+    }
+  });
 
   function recordFetchQuery(searchQuery) {
     if (searchQuery === fetchQuery) {
       return;
     }
     setFetchQuery(searchQuery);
-    // setFetchedImages([]);
+    setFetchedImages(null);
     setPage(1);
   }
 
@@ -68,7 +66,7 @@ export default function App() {
   }
 
   function toggleModal() {
-    setShowModal(({ showModal }) => !showModal);
+    setShowModal(showModal => !showModal);
   }
 
   return (
