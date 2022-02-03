@@ -50,7 +50,7 @@ export default function App() {
     if (page > 1) {
       return window.scrollBy({ top: 1000, behavior: 'smooth' });
     }
-  });
+  }, [page, fetchedImages]);
 
   function recordFetchQuery(searchQuery) {
     if (searchQuery === fetchQuery) {
