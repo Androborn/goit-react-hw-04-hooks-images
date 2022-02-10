@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+import 'react-lazy-load-image-component/src/effects/blur.css';
+
 import { Searchbar, SearchForm, ImageGallery, Loader, Button, Modal } from './';
 import { pixabayApiService } from '../utils';
 import {
@@ -19,9 +22,11 @@ export default function App() {
   const [fetchQuery, setFetchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
-  const [modalImg, setModalImg] = useState('');
+  const [modalImg, setModalImg] = useState({});
   const [loading, setLoading] = useState(false);
   const [showLoadMoreBtn, setShowLoadMoreBtn] = useState(false);
+
+  console.log(modalImg);
 
   const isFirstRender = useRef(true);
 
@@ -125,16 +130,21 @@ export default function App() {
         ) : (
           <ImageGallery
             fetchedImages={fetchedImages}
-            onClick={largeImageURL => {
+            onClick={(largeImageURL, previewURL) => {
               toggleModal();
-              setModalImg(largeImageURL);
+              setModalImg({ largeImageURL, previewURL });
             }}
           />
         )}
         {loading && <Loader />}
         {showModal && (
           <Modal closeModal={toggleModal}>
-            <img src={modalImg} alt="Enlarged" />
+            <LazyLoadImage
+              src={modalImg.largeImageURL}
+              alt="Enlarged"
+              effect="blur"
+              placeholderSrc={modalImg.previewURL}
+            />
           </Modal>
         )}
       </Wrapper>
