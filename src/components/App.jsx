@@ -2,7 +2,17 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { Searchbar, SearchForm, ImageGallery, Loader, Button, Modal } from './';
 import { pixabayApiService } from '../utils';
-import { Wrapper } from './App.styled';
+import {
+  notifySuccess,
+  notifyWarning,
+  notifyInfo,
+  notifyError,
+} from '../vendors';
+import {
+  Wrapper,
+  PreSearchPlaceHolder,
+  StyledToastContainer,
+} from './App.styled';
 
 export default function App() {
   const [fetchedImages, setFetchedImages] = useState(null);
@@ -11,52 +21,60 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [modalImg, setModalImg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showLoadMoreBtn, setShowLoadMoreBtn] = useState(false);
+
   const isFirstRender = useRef(true);
+
+  const IMG_PER_PAGE = 12;
 
   const receivedImages = useCallback(async () => {
     try {
-      const newlyfetchedImages = await pixabayApiService(fetchQuery, page);
+      const fetchedData = await pixabayApiService(
+        fetchQuery,
+        page,
+        IMG_PER_PAGE,
+      );
+      const { hits: newlyFetchedImages, totalHits: totalFoundImagesQuantity } =
+        fetchedData;
 
-      if (Array.isArray(newlyfetchedImages)) {
+      if (totalFoundImagesQuantity === 0) {
+        return notifyWarning('Nothing found by your request');
+      } else {
+        if (page === 1) {
+          notifySuccess(
+            `${totalFoundImagesQuantity} images found by your request!`,
+          );
+        }
+        toggleLoadMoreBtn(IMG_PER_PAGE, totalFoundImagesQuantity);
         return setFetchedImages(prevFetchedImages => {
           if (prevFetchedImages) {
-            return [...prevFetchedImages, ...newlyfetchedImages];
+            return [...prevFetchedImages, ...newlyFetchedImages];
+          } else {
+            return [...newlyFetchedImages];
           }
-          return [...newlyfetchedImages];
         });
-      } else {
-        throw new Error('Fetch try error');
       }
     } catch (error) {
       console.log(error);
-      alert(
+      notifyError(
         `An error occured processing your request. Retry, or contact site Admin for "${error.message}" if repeats.`,
       );
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchQuery, page]);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    setLoading(true);
-    receivedImages();
-  }, [receivedImages]);
-
-  useEffect(() => {
-    if (page > 1) {
-      return window.scrollBy({ top: 1000, behavior: 'smooth' });
-    }
-  }, [page, fetchedImages]);
 
   function recordFetchQuery(searchQuery) {
     if (searchQuery === fetchQuery) {
       return;
+    } else {
+      setFetchQuery(searchQuery);
+      setInitialState();
     }
-    setFetchQuery(searchQuery);
+  }
+
+  function setInitialState() {
     setFetchedImages(null);
     setPage(1);
   }
@@ -69,19 +87,50 @@ export default function App() {
     setShowModal(showModal => !showModal);
   }
 
+  function toggleLoadMoreBtn(IMG_PER_PAGE, totalFoundImagesQuantity) {
+    if (page >= totalFoundImagesQuantity / IMG_PER_PAGE) {
+      notifyInfo('No more images to load by your request');
+      return setShowLoadMoreBtn(false);
+    } else {
+      return setShowLoadMoreBtn(true);
+    }
+  }
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    } else {
+      setLoading(true);
+      receivedImages();
+    }
+  }, [receivedImages]);
+
+  useEffect(() => {
+    if (page > 1) {
+      return window.scrollBy({ top: 1000, behavior: 'smooth' });
+    }
+  }, [page, fetchedImages]);
+
   return (
     <>
       <Wrapper>
         <Searchbar>
           <SearchForm onSubmit={recordFetchQuery} />
         </Searchbar>
-        <ImageGallery
-          fetchedImages={fetchedImages}
-          onClick={largeImageURL => {
-            toggleModal();
-            setModalImg(largeImageURL);
-          }}
-        />
+        {!fetchedImages && !loading ? (
+          <PreSearchPlaceHolder>
+            Search for the images you like by the key word.
+          </PreSearchPlaceHolder>
+        ) : (
+          <ImageGallery
+            fetchedImages={fetchedImages}
+            onClick={largeImageURL => {
+              toggleModal();
+              setModalImg(largeImageURL);
+            }}
+          />
+        )}
         {loading && <Loader />}
         {showModal && (
           <Modal closeModal={toggleModal}>
@@ -89,9 +138,10 @@ export default function App() {
           </Modal>
         )}
       </Wrapper>
-      {fetchedImages && !loading && (
+      {showLoadMoreBtn && !loading && (
         <Button onClick={loadMoreImages}>Load more</Button>
       )}
+      <StyledToastContainer />
     </>
   );
 }

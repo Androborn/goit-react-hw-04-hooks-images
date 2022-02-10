@@ -4,10 +4,8 @@ const API_KEY = '24437506-2bd4a91f2d86307f94e472b85';
 const IMG_TYPE = 'photo';
 const ORIENTATION = 'horizontal';
 const AGE_FILTER = 'true';
-const IMG_PER_PAGE = 12;
 
-// re-do to try-catch
-export const pixabayApiService = (searchQuery, page) => {
+export const pixabayApiService = (searchQuery, page, IMG_PER_PAGE) => {
   axios.defaults.baseURL = BASE_URL;
   return axios
     .get('api/', {
@@ -22,6 +20,10 @@ export const pixabayApiService = (searchQuery, page) => {
       },
     })
     .then(({ data }) => {
-      return data.hits;
+      if (Array.isArray(data.hits)) {
+        return data;
+      } else {
+        throw new Error('Search error');
+      }
     });
 };
