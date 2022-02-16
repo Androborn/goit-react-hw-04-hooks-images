@@ -3,13 +3,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import 'react-lazy-load-image-component/src/effects/blur.css';
 
-import { Searchbar, SearchForm, ImageGallery, Loader, Button, Modal } from './';
+import { Searchbar, SearchForm, ImageGallery, Button, Modal } from './';
 import { pixabayApiService } from '../utils';
 import {
   notifySuccess,
   notifyWarning,
   notifyInfo,
   notifyError,
+  Loader,
 } from '../vendors';
 import {
   Wrapper,
@@ -26,13 +27,24 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [showLoadMoreBtn, setShowLoadMoreBtn] = useState(false);
 
-  console.log(modalImg);
-
   const isFirstRender = useRef(true);
 
   const IMG_PER_PAGE = 12;
 
+  const toggleLoadMoreBtn = useCallback(
+    (IMG_PER_PAGE, totalFoundImagesQuantity) => {
+      if (page >= totalFoundImagesQuantity / IMG_PER_PAGE) {
+        notifyInfo('No more images to load by your request');
+        return setShowLoadMoreBtn(false);
+      } else {
+        return setShowLoadMoreBtn(true);
+      }
+    },
+    [page],
+  );
+
   const receivedImages = useCallback(async () => {
+    setLoading(true);
     try {
       const fetchedData = await pixabayApiService(
         fetchQuery,
@@ -67,8 +79,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchQuery, page]);
+  }, [fetchQuery, page, toggleLoadMoreBtn]);
 
   function recordFetchQuery(searchQuery) {
     if (searchQuery === fetchQuery) {
@@ -92,21 +103,11 @@ export default function App() {
     setShowModal(showModal => !showModal);
   }
 
-  function toggleLoadMoreBtn(IMG_PER_PAGE, totalFoundImagesQuantity) {
-    if (page >= totalFoundImagesQuantity / IMG_PER_PAGE) {
-      notifyInfo('No more images to load by your request');
-      return setShowLoadMoreBtn(false);
-    } else {
-      return setShowLoadMoreBtn(true);
-    }
-  }
-
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     } else {
-      setLoading(true);
       receivedImages();
     }
   }, [receivedImages]);
