@@ -96,7 +96,7 @@ export default function App() {
   }
 
   function loadMoreImages() {
-    setPage(page + 1);
+    setPage(prevPage => prevPage + 1);
   }
 
   function toggleModal() {

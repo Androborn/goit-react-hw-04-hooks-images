@@ -1,26 +1,23 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 import { Overlay, ModalWindow } from './Modal.styled';
 
 export function Modal({ closeModal, children }) {
-  const keydownHandler = useCallback(
-    ({ code }) => {
+  useEffect(() => {
+    const keydownHandler = ({ code }) => {
       if (code === 'Escape') {
         closeModal();
       }
-    },
-    [closeModal],
-  );
+    };
 
-  useEffect(() => {
     window.addEventListener('keydown', keydownHandler);
     switchBodyScroll('hidden', '17px');
     return () => {
       window.removeEventListener('keydown', keydownHandler);
       switchBodyScroll('unset', '0');
     };
-  }, [keydownHandler]);
+  }, [closeModal]);
 
   function switchBodyScroll(state, margin) {
     document.body.style.overflow = state;
